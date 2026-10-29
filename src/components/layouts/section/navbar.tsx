@@ -22,7 +22,7 @@ export default function Navbar() {
                     <Image
                         src="/icon/logo.svg"
                         alt="Ward-Ly"
-                        width={100}
+                        width={32}
                         height={32}
                         priority
                         className="h-8 w-auto"
