@@ -36,10 +36,10 @@ export function LoginForm({
                 />
                 <div className="flex flex-col gap-1">
                   <h1 className="font-heading text-2xl font-bold tracking-tight">
-                    Selamat datang kembali
+                    Selamat datang
                   </h1>
                   <p className="text-balance text-muted-foreground">
-                    Masuk ke akun Wardly untuk melanjutkan latihanmu.
+                    Masuk ke akun Wardly untuk akses fitur lainnya.
                   </p>
                 </div>
               </div>
@@ -76,7 +76,7 @@ export function LoginForm({
               <Field>
                 <Button
                   type="submit"
-                  className="bg-teal-500 font-semibold text-slate-900 hover:bg-teal-400"
+                  className="bg-teal-500 font-semibold text-white hover:bg-teal-400"
                 >
                   Masuk
                 </Button>
@@ -95,7 +95,7 @@ export function LoginForm({
 
               <FieldDescription className="text-center">
                 Belum punya akun?{" "}
-                <a href="#" className="font-medium">
+                <a href="/sign-up" className="font-medium">
                   Daftar
                 </a>
               </FieldDescription>

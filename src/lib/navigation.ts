@@ -5,6 +5,10 @@ export type NavigationItem = {
 
 export const menus: NavigationItem[] = [
     {
+        title: "Problem",
+        href: "/problem"
+    },
+    {
         title: "Cara kerja",
         href: "/how-it-works"
     },
@@ -16,4 +20,5 @@ export const menus: NavigationItem[] = [
         title: "Blog",
         href: "/blog"
     },
+
 ]

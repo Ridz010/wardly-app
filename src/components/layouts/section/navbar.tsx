@@ -51,17 +51,17 @@ export default function Navbar() {
                         className="h-9 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
                     >
                         <Link href="/sign-in">
-                            Login
+                            Coba Sekarang
                         </Link>
+                        <RiArrowRightUpLine className="ml-1 size-4" />
                     </Button>
 
-                    <Link
+                    {/* <Link
                         href="/sign-up"
                         className="hidden items-center text-sm font-medium text-foreground  sm:flex"
                     >
                         Daftar
-                        <RiArrowRightUpLine className="ml-1 size-4" />
-                    </Link>
+                    </Link> */}
                 </div>
             </div>
         </header>
