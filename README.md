@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ward-Ly
 
-## Getting Started
+Pemeriksa pesan mencurigakan berbahasa Indonesia. Next.js 16, Tailwind 4, shadcn (Base UI), React Bits, Supabase.
 
-First, run the development server:
+## Menjalankan
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Salin `.env.example` menjadi `.env.local`, lalu isi nilainya.
+2. (Disarankan) jalankan `supabase/migrations/20261102000000_rate_limit.sql` di SQL editor Supabase.
+3. `npm install` lalu `npm run dev`.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup admin
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Jalankan aplikasi, daftar lewat `/sign-up` (atau Google), dan konfirmasi email bila diminta.
+2. Buka SQL Editor Supabase, lalu jalankan `supabase/admin-setup.sql` setelah mengganti email di dalamnya.
+3. Muat ulang aplikasi. Menu "Panel admin" muncul di sidebar dashboard, atau buka `/admin` langsung.
+4. Admin berikutnya dan moderator diatur dari `/admin/pengguna`. Moderator hanya mengakses ringkasan dan moderasi.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`profiles.role` bernilai `user`, `moderator`, atau `admin`.
 
-## Learn More
+## Fitur AI
 
-To learn more about Next.js, take a look at the following resources:
+`OPEN_ROUTER_API_KEY` mengaktifkan: analisis tambahan pada Bedah, pembacaan screenshot, dan Dity (chat). Tanpa kunci, Bedah tetap jalan dengan aturan dan pola tautan; screenshot dan chat bebas menampilkan pesan bahwa AI belum aktif. Pilih model yang mendukung gambar (misalnya `openai/gpt-4o-mini`) agar screenshot terbaca.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Rute
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Area | Rute |
+| --- | --- |
+| Publik | `/`, `/bedah`, `/latih`, `/latih/[slug]`, `/lindungi`, `/lindungi/[slug]`, `/komunitas`, `/blog`, `/blog/[slug]`, `/radar` |
+| Auth | `/sign-in`, `/sign-up`, `/auth/callback` |
+| Pengguna | `/dashboard`, `/dashboard/riwayat`, `/dashboard/lencana`, `/dashboard/pengaturan` |
+| Admin | `/admin`, `/admin/moderasi`, `/admin/pengguna`, `/admin/[aturan, kategori, skenario, langkah, pilihan, panduan, butir, blog]` |
 
-## Deploy on Vercel
+## Arsitektur
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `src/env` — validasi env (public dan server-only).
+- `src/lib/supabase` — klien browser, server, admin, dan `proxy` sesi.
+- `src/lib/auth` — sesi, profil, pengecekan peran.
+- `src/lib/services` — logika bisnis (analisis pesan).
+- `src/lib/data` — pembacaan konten publik dengan `use cache` dan tag.
+- `src/lib/admin/resources.ts` — konfigurasi CRUD admin; satu halaman generik melayani semua tabel konten.
+- `src/lib/rate-limit.ts` — batas permintaan per tindakan (RPC `consume_rate_limit`, cadangan di memori).
+- `src/lib/validation.ts` — seluruh skema zod.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Keamanan
+
+- CSP dan header keamanan di `next.config.ts`.
+- Semua aksi server memvalidasi input dengan zod, memeriksa peran, dan dibatasi rate limit.
+- Kunci `service_role` hanya dipakai di sisi server (`server-only`).
+- Pesan pengguna disamarkan (`redact`) sebelum dikirim ke LLM.
+- Parameter `next` disaring agar tidak menjadi open redirect.

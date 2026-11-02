@@ -1,0 +1,155 @@
+import "server-only";
+
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { askLlm, type LlmVerdict } from "@/lib/llm";
+import { redact } from "@/lib/redact";
+import {
+    analyzeRules,
+    levelFromScore,
+    maxLevel,
+    topCategory,
+    type Level,
+} from "@/lib/rules";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { Json } from "@/lib/supabase/types";
+import { analyzeUrls, type Hit } from "@/lib/url-check";
+import type { QuotaInfo } from "@/lib/services/scan-guard";
+
+export type AnalysisResult = {
+    id: string | null;
+    level: Level;
+    score: number;
+    hits: Hit[];
+    urls: string[];
+    summary: string;
+    reasons: string[];
+    nextSteps: string[];
+    redacted: string[];
+    ai: boolean;
+    saved: boolean;
+    extracted?: string;
+    quota?: QuotaInfo;
+};
+
+const FALLBACK: Record<Level, { summary: string; steps: string[] }> = {
+    rendah: {
+        summary:
+            "Kami tidak menemukan tanda penipuan yang kuat. Tetap cek pengirim lewat kanal resmi sebelum bertindak.",
+        steps: [
+            "Hubungi pengirim lewat nomor atau aplikasi resmi bila ragu.",
+            "Jangan bagikan kode OTP atau PIN ke siapa pun.",
+        ],
+    },
+    waspada: {
+        summary:
+            "Ada beberapa tanda yang perlu diwaspadai. Jangan tergesa membalas atau membuka tautan di pesan ini.",
+        steps: [
+            "Jangan klik tautan sebelum memastikan domainnya resmi.",
+            "Verifikasi ke pihak terkait lewat kontak resmi, bukan kontak di pesan.",
+            "Simpan tangkapan layar bila perlu dilaporkan.",
+        ],
+    },
+    tinggi: {
+        summary:
+            "Pesan ini punya banyak ciri penipuan. Sebaiknya jangan dibalas, jangan klik tautan, dan jangan kirim data apa pun.",
+        steps: [
+            "Berhenti membalas dan blokir pengirim.",
+            "Jangan kirim OTP, PIN, atau data kartu.",
+            "Jika sudah terlanjur, hubungi bank atau penyedia layanan secepatnya.",
+        ],
+    },
+};
+
+type Input = {
+    text: string;
+    userId: string | null;
+    rateKey: string;
+    saveHistory: boolean;
+    kind?: "text" | "url" | "image";
+};
+
+export async function analyzeMessage({
+    text,
+    userId,
+    rateKey,
+    saveHistory,
+    kind = "text",
+}: Input): Promise<AnalysisResult> {
+    await enforceRateLimit(RATE_LIMITS.analyze, rateKey);
+
+    const { clean, counts } = redact(text);
+    const rules = await analyzeRules(clean);
+    const urls = analyzeUrls(clean);
+
+    const hits = [...rules.hits, ...urls.hits];
+    const score = Math.min(100, rules.score + urls.score);
+    let level = levelFromScore(score);
+
+    const verdict: LlmVerdict | null = await askLlm(clean);
+    if (verdict) level = maxLevel(level, verdict.level);
+
+    const fallback = FALLBACK[level];
+    const reasons =
+        verdict?.reasons.length ? verdict.reasons : hits.map((hit) => hit.explanation);
+    const nextSteps = verdict?.next_steps.length ? verdict.next_steps : fallback.steps;
+    const summary = verdict?.summary ?? fallback.summary;
+
+    let id: string | null = null;
+    if (saveHistory && userId) {
+        const { data } = await createAdminClient()
+            .from("analyses")
+            .insert({
+                user_id: userId,
+                input_kind: kind === "text" && urls.urls.length ? "mixed" : kind,
+                input_excerpt: clean.slice(0, 280),
+                risk_level: level,
+                risk_score: score,
+                category_slug: topCategory(hits),
+                rule_hits: hits as unknown as Json,
+                ai_result: verdict as unknown as Json,
+                model: verdict ? "openrouter" : null,
+            })
+            .select("id")
+            .single();
+        id = data?.id ?? null;
+    }
+
+    return {
+        id,
+        level,
+        score,
+        hits,
+        urls: urls.urls,
+        summary,
+        reasons,
+        nextSteps,
+        redacted: Object.keys(counts),
+        ai: Boolean(verdict),
+        saved: Boolean(id),
+    };
+}
+
+export type QuickResult = {
+    level: Level;
+    score: number;
+    hits: Pick<Hit, "code" | "label" | "explanation">[];
+};
+
+export async function quickCheck(text: string, rateKey: string): Promise<QuickResult> {
+    await enforceRateLimit(RATE_LIMITS.quick, rateKey);
+
+    const clean = redact(text).clean;
+    const rules = await analyzeRules(clean);
+    const urls = analyzeUrls(clean);
+    const score = Math.min(100, rules.score + urls.score);
+
+    return {
+        level: levelFromScore(score),
+        score,
+        hits: [...rules.hits, ...urls.hits].map(({ code, label, explanation }) => ({
+            code,
+            label,
+            explanation,
+        })),
+    };
+}

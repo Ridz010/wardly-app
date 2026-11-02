@@ -1,39 +1,75 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Hit } from './url-check'
+import "server-only";
 
-type Rule = { code: string; label: string; explanation: string; pattern: string; weight: number; category: { slug: string } | null }
-let cache: { at: number; rules: Rule[] } | null = null
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { Enums } from "@/lib/supabase/types";
+import type { Hit } from "./url-check";
 
-async function loadRules(supabase: SupabaseClient): Promise<Rule[]> {
-    if (cache && Date.now() - cache.at < 5 * 60_000) return cache.rules
-    const { data } = await supabase
-        .from('red_flag_rules')
-        .select('code,label,explanation,pattern,weight,category:scam_categories(slug)')
-    cache = { at: Date.now(), rules: (data as unknown as Rule[]) ?? [] }
-    return cache.rules
+import { levelFromScore, maxLevel, type Level } from "@/lib/risk";
+
+export { levelFromScore, maxLevel, type Level };
+
+type Rule = {
+    code: string;
+    label: string;
+    explanation: string;
+    pattern: string;
+    weight: number;
+    applies_to: Enums<"input_kind">[];
+    category: { slug: string } | null;
+};
+
+const TTL = 5 * 60_000;
+const MAX_INPUT = 6000;
+let cache: { at: number; rules: Rule[] } | null = null;
+
+export const invalidateRulesCache = () => {
+    cache = null;
+};
+
+async function loadRules(): Promise<Rule[]> {
+    if (cache && Date.now() - cache.at < TTL) return cache.rules;
+    const { data } = await createAdminClient()
+        .from("red_flag_rules")
+        .select(
+            "code,label,explanation,pattern,weight,applies_to,category:scam_categories(slug)",
+        )
+        .eq("is_active", true);
+    cache = { at: Date.now(), rules: (data as unknown as Rule[]) ?? [] };
+    return cache.rules;
 }
 
-export async function analyzeRules(supabase: SupabaseClient, text: string) {
-    const rules = await loadRules(supabase)
-    const hits: Hit[] = []
-    for (const r of rules) {
+export async function analyzeRules(text: string) {
+    const rules = await loadRules();
+    const input = text.slice(0, MAX_INPUT);
+    const hits: Hit[] = [];
+
+    for (const rule of rules) {
         try {
-            if (new RegExp(r.pattern, 'i').test(text))
-                hits.push({ code: r.code, label: r.label, explanation: r.explanation, weight: r.weight, category: r.category?.slug })
+            if (new RegExp(rule.pattern, "i").test(input)) {
+                hits.push({
+                    code: rule.code,
+                    label: rule.label,
+                    explanation: rule.explanation,
+                    weight: rule.weight,
+                    category: rule.category?.slug,
+                });
+            }
         } catch {
-            
+            continue;
         }
     }
-    const score = Math.min(100, hits.reduce((s, h) => s + h.weight, 0))
-    return { hits, score }
+
+    const score = Math.min(
+        100,
+        hits.reduce((sum, hit) => sum + hit.weight, 0),
+    );
+    return { hits, score };
 }
 
-export type Level = 'rendah' | 'waspada' | 'tinggi'
-export const levelFromScore = (s: number): Level => (s >= 50 ? 'tinggi' : s >= 22 ? 'waspada' : 'rendah')
-const ORDER: Level[] = ['rendah', 'waspada', 'tinggi']
-export const maxLevel = (a: Level, b?: Level | null): Level =>
-    !b ? a : ORDER.indexOf(a) >= ORDER.indexOf(b) ? a : b
-
 export function topCategory(hits: Hit[]) {
-    return [...hits].filter((h) => h.category).sort((a, b) => b.weight - a.weight)[0]?.category ?? null
+    return (
+        [...hits]
+            .filter((hit) => hit.category)
+            .sort((a, b) => b.weight - a.weight)[0]?.category ?? null
+    );
 }
