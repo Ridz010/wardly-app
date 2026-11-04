@@ -1,0 +1,121 @@
+/* Elemen dekoratif landing page: pil gradasi lembut, awan, dan bukit. */
+
+.aurora-pill {
+  --a: #5df2e7;
+  --b: #158ab0;
+  --c: #d4fff7;
+  position: relative;
+  overflow: hidden;
+  border-radius: 999px;
+  background:
+    radial-gradient(60% 120% at 20% 30%, var(--a) 0%, transparent 60%),
+    radial-gradient(50% 120% at 80% 70%, var(--b) 0%, transparent 65%),
+    radial-gradient(80% 140% at 50% 50%, var(--c) 0%, transparent 80%),
+    linear-gradient(120deg, var(--c), var(--a));
+  background-size: 180% 180%;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -14px 30px -18px rgba(11, 74, 92, 0.45),
+    0 18px 36px -24px rgba(21, 138, 176, 0.7);
+  animation: aurora-drift 9s ease-in-out infinite alternate;
+}
+
+.aurora-pill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), transparent 45%);
+  mix-blend-mode: soft-light;
+}
+
+.aurora-pill[data-tone="dusk"] {
+  --a: #c4b5fd;
+  --b: #f9a8d4;
+  --c: #fde68a;
+}
+
+.aurora-pill[data-tone="mist"] {
+  --a: #a7c4bc;
+  --b: #2f5d62;
+  --c: #e8f1ee;
+}
+
+.aurora-pill[data-tone="meadow"] {
+  --a: #bef264;
+  --b: #78dcb8;
+  --c: #fef9c3;
+}
+
+.aurora-pill[data-tone="ocean"] {
+  --a: #93c5fd;
+  --b: #2563eb;
+  --c: #e0f2fe;
+}
+
+@keyframes aurora-drift {
+  0% {
+    background-position: 0% 40%;
+  }
+  100% {
+    background-position: 100% 60%;
+  }
+}
+
+.sky-cloud {
+  position: absolute;
+  border-radius: 999px;
+  background: #fff;
+  filter: blur(2px);
+  opacity: 0.9;
+  animation: cloud-float 18s ease-in-out infinite alternate;
+}
+
+.sky-cloud::before,
+.sky-cloud::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  background: inherit;
+}
+
+.sky-cloud::before {
+  width: 55%;
+  height: 160%;
+  left: 15%;
+  bottom: 20%;
+}
+
+.sky-cloud::after {
+  width: 40%;
+  height: 130%;
+  right: 12%;
+  bottom: 25%;
+}
+
+@keyframes cloud-float {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(36px);
+  }
+}
+
+.sign-post {
+  position: relative;
+  border-radius: 10px;
+  padding: 0.45rem 1.4rem 0.45rem 0.9rem;
+  background: linear-gradient(180deg, #ffffff, #e9f6f9);
+  box-shadow:
+    inset 0 -2px 0 rgba(11, 74, 92, 0.12),
+    0 10px 20px -12px rgba(11, 74, 92, 0.5);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-pill,
+  .sky-cloud {
+    animation: none;
+  }
+}

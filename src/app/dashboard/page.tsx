@@ -1,75 +1,135 @@
 import type { Metadata } from "next";
-import { AwardIcon, LockIcon } from "lucide-react";
+import Link from "next/link";
+import { AwardIcon, FlameIcon, ScanSearchIcon, SwordsIcon, ZapIcon } from "lucide-react";
 import { Suspense } from "react";
 
-import AnimatedContent from "@/components/AnimatedContent";
-import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageLoader } from "@/components/shared/page-loader";
+import { RiskBadge } from "@/components/shared/risk-badge";
+import { StatGrid } from "@/components/shared/stat-card";
+import { buttonVariants } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { requireUser } from "@/lib/auth/session";
+import { getScenarios } from "@/lib/data/content";
+import { getLatihProgress } from "@/lib/data/progress";
+import { formatDate } from "@/lib/format";
+import { levelInfo } from "@/lib/gamification";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import { cn } from "cn";
 
-export const metadata: Metadata = { title: "Lencana" };
+export const metadata: Metadata = { title: "Ringkasan" };
 
-async function Badges() {
-  const user = await requireUser("/dashboard/lencana");
-  const supabase = await createClient();
-  const [all, earned] = await Promise.all([
-    createAdminClient().from("badges").select("id,code,name,description").order("name"),
-    supabase.from("user_badges").select("badge_id,earned_at").eq("user_id", user.id),
+async function Overview() {
+  const user = await requireUser("/dashboard");
+  const admin = createAdminClient();
+  const [progress, scenarios, analyses, attempts] = await Promise.all([
+    getLatihProgress(user.id),
+    getScenarios(),
+    admin
+      .from("analyses")
+      .select("id,risk_level,input_excerpt,created_at", { count: "exact" })
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(5),
+    admin
+      .from("scenario_attempts")
+      .select("id,scenario_id,score,max_score,xp_earned,completed_at")
+      .eq("user_id", user.id)
+      .order("completed_at", { ascending: false })
+      .limit(5),
   ]);
 
-  const owned = new Map(earned.data?.map((row) => [row.badge_id, row.earned_at]));
-  const badges = all.data ?? [];
-
-  if (!badges.length) {
-    return <EmptyState icon={<AwardIcon />} title="Belum ada lencana" description="Lencana akan muncul di sini." />;
-  }
+  const level = levelInfo(progress.xp);
+  const titles = new Map(scenarios.map((item) => [item.id, item.title]));
 
   return (
-    <AnimatedContent distance={24} duration={0.55} stagger={0.06} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
-      {badges.map((badge) => {
-        const date = owned.get(badge.id);
-        return (
-          <div
-            key={badge.id}
-            className={cn(
-              "flex items-start gap-4 rounded-2xl border border-border p-5",
-              date ? "bg-card" : "bg-muted/40 text-muted-foreground",
-            )}
-          >
-            <span
-              className={cn(
-                "flex size-10 shrink-0 items-center justify-center rounded-full",
-                date ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
-              )}
-            >
-              {date ? <AwardIcon className="size-5" /> : <LockIcon className="size-4" />}
-            </span>
-            <div className="flex min-w-0 flex-col gap-1">
-              <span className="font-normal text-foreground">{badge.name}</span>
-              <span className="text-sm">{badge.description}</span>
-              {date ? (
-                <span className="text-xs text-primary">
-                  Diraih {new Date(date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-                </span>
-              ) : null}
-            </div>
+    <div className="flex flex-col gap-8">
+      <StatGrid
+        stats={[
+          { label: "Level", value: level.level, hint: level.title, icon: <ZapIcon /> },
+          { label: "Total XP", value: progress.xp, hint: `${level.needed - level.current} XP lagi ke level berikutnya`, icon: <SwordsIcon /> },
+          { label: "Streak", value: `${progress.streak} hari`, hint: progress.activeToday ? "Sudah berlatih hari ini" : "Latihan hari ini belum", icon: <FlameIcon /> },
+          { label: "Lencana", value: progress.badgeIds.length, hint: "Lihat di halaman Lencana", icon: <AwardIcon /> },
+        ]}
+      />
+
+      <div className="flex flex-col gap-2 rounded-2xl border border-border p-5">
+        <div className="flex items-center justify-between text-sm">
+          <span>
+            Level {level.level} · {level.title}
+          </span>
+          <span className="text-muted-foreground tabular-nums">
+            {level.current}/{level.needed} XP
+          </span>
+        </div>
+        <Progress value={level.progress} aria-label="Progres level" className="[&_[data-slot=progress-track]]:h-2" />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="flex flex-col gap-4 rounded-2xl border border-border p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading text-lg font-medium">Latihan terakhir</h2>
+            <Link href="/latih" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "rounded-full font-normal")}>
+              Ke dojo
+            </Link>
           </div>
-        );
-      })}
-    </AnimatedContent>
+          {attempts.data?.length ? (
+            <ul className="flex flex-col divide-y divide-border">
+              {attempts.data.map((row) => (
+                <li key={row.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate">{titles.get(row.scenario_id) ?? "Skenario"}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(row.completed_at)}</span>
+                  </span>
+                  <span className="shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+                    {row.score}/{row.max_score}
+                    <span className="block text-primary">+{row.xp_earned} XP</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">Belum ada latihan. Coba satu skenario untuk mulai mengumpulkan XP.</p>
+          )}
+        </section>
+
+        <section className="flex flex-col gap-4 rounded-2xl border border-border p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading text-lg font-medium">Pemeriksaan terakhir</h2>
+            <Link href="/bedah" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5 rounded-full font-normal")}>
+              <ScanSearchIcon className="size-3.5" />
+              Periksa pesan
+            </Link>
+          </div>
+          {analyses.data?.length ? (
+            <ul className="flex flex-col divide-y divide-border">
+              {analyses.data.map((row) => (
+                <li key={row.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate">{row.input_excerpt ?? "Pesan"}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(row.created_at)}</span>
+                  </span>
+                  <RiskBadge level={row.risk_level} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Riwayat kosong. Pemeriksaan disimpan bila kamu mengaktifkannya di pengaturan.
+            </p>
+          )}
+        </section>
+      </div>
+    </div>
   );
 }
 
-export default function BadgesPage() {
+export default function DashboardPage() {
   return (
     <>
-      <PageHeader animate={false} title="Lencana" description="Kumpulkan lencana dari latihan dan kontribusimu." />
+      <PageHeader animate={false} title="Ringkasan" description="Progres latihan dan aktivitas pemeriksaanmu." />
       <Suspense fallback={<PageLoader />}>
-        <Badges />
+        <Overview />
       </Suspense>
     </>
   );

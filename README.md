@@ -5,7 +5,7 @@ Pemeriksa pesan mencurigakan berbahasa Indonesia. Next.js 16, Tailwind 4, shadcn
 ## Menjalankan
 
 1. Salin `.env.example` menjadi `.env.local`, lalu isi nilainya.
-2. (Disarankan) jalankan `supabase/migrations/20261102000000_rate_limit.sql` di SQL editor Supabase.
+2. Jalankan file di `supabase/migrations/` secara berurutan di SQL editor Supabase. `20261104000000_latih_gamification.sql` wajib untuk XP, level, streak, lencana, dan skenario Latih.
 3. `npm install` lalu `npm run dev`.
 
 ## Setup admin

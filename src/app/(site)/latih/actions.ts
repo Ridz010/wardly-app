@@ -1,7 +1,10 @@
 "use server";
 
+import { revalidateTag } from "next/cache";
+
 import { getUser } from "@/lib/auth/session";
 import { getClientFingerprint } from "@/lib/client-id";
+import { TAGS } from "@/lib/data/content";
 import { AppError, toActionError } from "@/lib/errors";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { fail, type ActionState } from "@/lib/result";
@@ -19,9 +22,39 @@ export type ChoiceOutcome = {
 };
 
 export type FinishOutcome = {
-  xpEarned: number | null;
   saved: boolean;
+  score: number | null;
+  maxScore: number | null;
+  xpEarned: number | null;
+  xpTotal: number | null;
+  level: number | null;
+  leveledUp: boolean;
+  streak: number | null;
+  newBadges: { code: string; name: string }[];
 };
+
+const GUEST: FinishOutcome = {
+  saved: false,
+  score: null,
+  maxScore: null,
+  xpEarned: null,
+  xpTotal: null,
+  level: null,
+  leveledUp: false,
+  streak: null,
+  newBadges: [],
+};
+
+const finishRecord = z.object({
+  xp_earned: z.number().catch(0),
+  score: z.number().nullable().catch(null),
+  max_score: z.number().nullable().catch(null),
+  xp_total: z.number().nullable().catch(null),
+  level: z.number().nullable().catch(null),
+  leveled_up: z.boolean().catch(false),
+  streak: z.number().nullable().catch(null),
+  new_badges: z.array(z.object({ code: z.string(), name: z.string() })).catch([]),
+});
 
 async function limitKey() {
   const user = await getUser();
@@ -67,7 +100,7 @@ export async function finishScenarioAction(
     if (!parsed.success) throw new AppError("validation");
 
     const user = await getUser();
-    if (!user) return { status: "success", data: { xpEarned: null, saved: false } };
+    if (!user) return { status: "success", data: GUEST };
 
     await enforceRateLimit(RATE_LIMITS.scenario, user.id);
     const supabase = await createClient();
@@ -77,11 +110,21 @@ export async function finishScenarioAction(
     });
     if (error) return fail("Hasil latihan belum bisa disimpan.");
 
-    const record = (data ?? {}) as Record<string, unknown>;
-    const xp = record.xp_earned ?? record.xp;
+    const record = finishRecord.parse(data ?? {});
+    revalidateTag(TAGS.leaderboard, "max");
     return {
       status: "success",
-      data: { xpEarned: typeof xp === "number" ? xp : null, saved: true },
+      data: {
+        saved: true,
+        score: record.score,
+        maxScore: record.max_score,
+        xpEarned: record.xp_earned,
+        xpTotal: record.xp_total,
+        level: record.level,
+        leveledUp: record.leveled_up,
+        streak: record.streak,
+        newBadges: record.new_badges,
+      },
     };
   } catch (error) {
     return toActionError(error);

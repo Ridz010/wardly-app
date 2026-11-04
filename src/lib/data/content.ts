@@ -11,6 +11,8 @@ export const TAGS = {
     blog: "blog",
     community: "community",
     rules: "rules",
+    badges: "badges",
+    leaderboard: "leaderboard",
 } as const;
 
 export type Category = Pick<
@@ -80,13 +82,14 @@ export async function getScenario(slug: string): Promise<ScenarioDetail | null> 
         .maybeSingle();
     if (!scenario) return null;
 
-    const { data: steps } = await admin
+    const { data: steps, error } = await admin
         .from("scenario_steps")
         .select(
-            "id,channel,narrative,sender_name,step_order,choices:scenario_choices(id,label,next_step_id,sort_order)",
+            "id,channel,narrative,sender_name,step_order,choices:scenario_choices!scenario_choices_step_id_fkey(id,label,next_step_id,sort_order)",
         )
         .eq("scenario_id", scenario.id)
         .order("step_order", { ascending: true });
+    if (error) console.error("[latih] gagal memuat langkah skenario", error.message);
 
     const ordered = ((steps as unknown as ScenarioStep[]) ?? []).map((step) => ({
         ...step,
@@ -277,4 +280,63 @@ export async function getRadarPatterns(): Promise<Record<string, RadarPattern[]>
         (grouped[slug] ??= []).push({ label: row.label, explanation: row.explanation, weight: row.weight });
     });
     return grouped;
+}
+
+export type BadgeItem = Pick<Tables<"badges">, "id" | "code" | "name" | "description" | "icon">;
+
+export async function getBadges(): Promise<BadgeItem[]> {
+    "use cache";
+    cacheLife("hours");
+    cacheTag(TAGS.badges);
+
+    const { data } = await createAdminClient()
+        .from("badges")
+        .select("id,code,name,description,icon")
+        .order("name");
+    return data ?? [];
+}
+
+export type LeaderboardRow = { id: string; name: string; xp: number; level: number };
+
+export async function getLeaderboard(limit = 10): Promise<LeaderboardRow[]> {
+    "use cache";
+    cacheLife("minutes");
+    cacheTag(TAGS.leaderboard);
+
+    const { data } = await createAdminClient()
+        .from("public_profiles")
+        .select("id,display_name,xp,level")
+        .gt("xp", 0)
+        .order("xp", { ascending: false })
+        .limit(limit);
+
+    return (data ?? []).flatMap((row) =>
+        row.id
+            ? [{ id: row.id, name: row.display_name || "Anggota Ward-Ly", xp: row.xp ?? 0, level: row.level ?? 1 }]
+            : [],
+    );
+}
+
+export type SiteStats = { analyses: number; scenarios: number; categories: number; stories: number };
+
+export async function getSiteStats(): Promise<SiteStats> {
+    "use cache";
+    cacheLife("hours");
+    cacheTag(TAGS.scenarios, TAGS.community, TAGS.categories);
+
+    const admin = createAdminClient();
+    const count = { count: "exact", head: true } as const;
+    const [analyses, scenarios, categories, stories] = await Promise.all([
+        admin.from("analyses").select("id", count),
+        admin.from("scenarios").select("id", count).eq("status", "published"),
+        admin.from("scam_categories").select("id", count),
+        admin.from("community_posts").select("id", count).eq("status", "published"),
+    ]);
+
+    return {
+        analyses: analyses.count ?? 0,
+        scenarios: scenarios.count ?? 0,
+        categories: categories.count ?? 0,
+        stories: stories.count ?? 0,
+    };
 }

@@ -50,7 +50,7 @@ export default async function Komunitas() {
 
                     <AnimatedContent distance={20} duration={0.7} delay={0.35}>
                         <div className="flex flex-wrap items-center gap-3">
-                            <StarBorder as={Link} href="/komunitas" radius={999} duration={5} theme="light">
+                            <StarBorder as="a" href="/komunitas" radius={999} duration={5} theme="light">
                                 <span className="px-2 text-sm">Buka komunitas</span>
                             </StarBorder>
                             <Link href="/komunitas/baru" className={cn(buttonVariants({ variant: "outline" }), "h-10 rounded-full px-5 font-normal")}>
