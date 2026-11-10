@@ -36,3 +36,29 @@ export const menus: NavigationItem[] = [
         description: "Tips dan cerita seputar keamanan pesan.",
     },
 ];
+
+export type NavigationGroup = {
+    label: string;
+    description: string;
+    hrefs: string[];
+};
+
+/** Feature pages grouped by the Recognize → Learn → Act journey. */
+export const navGroups: NavigationGroup[] = [
+    { label: "Periksa", description: "Cek pesan mencurigakan dan pantau pola yang sedang ramai.", hrefs: ["/bedah", "/radar"] },
+    { label: "Belajar", description: "Latihan lewat simulasi dan panduan perlindungan.", hrefs: ["/latih", "/lindungi"] },
+    { label: "Bersama", description: "Cerita dari komunitas dan catatan keamanan terbaru.", hrefs: ["/komunitas", "/blog"] },
+];
+
+/** Single links shown beside the dropdown groups on desktop. */
+export const navLinks = {
+    before: [{ title: "Cara Kerja", href: "/#cara-kerja" }],
+    after: [
+        { title: "FAQ", href: "/faq" },
+        { title: "Privasi", href: "/privacy" },
+    ],
+};
+
+export function menusFor(hrefs: string[]) {
+    return hrefs.flatMap((href) => menus.find((item) => item.href === href) ?? []);
+}

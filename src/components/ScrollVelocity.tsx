@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   motion,
   useAnimationFrame,
@@ -167,8 +167,21 @@ function VelocityText({
   const fling = useRef<number>(0);
   const drag = useRef({ active: false, pointerId: -1, lastX: 0, lastTime: 0, velocity: 0, travel: 0 });
 
+  const frameRef = useRef<HTMLDivElement>(null);
+  const onScreen = useRef(true);
+
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return undefined;
+    const observer = new IntersectionObserver(([entry]) => {
+      onScreen.current = entry.isIntersecting;
+    });
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
+
   useAnimationFrame((t, delta) => {
-    if (reduceMotion) return;
+    if (reduceMotion || !onScreen.current) return;
 
     const grab = drag.current;
     const seconds = Math.min(delta, 64) / 1000;
@@ -288,6 +301,7 @@ function VelocityText({
 
   return (
     <div
+      ref={frameRef}
       className={parallaxClassName}
       style={{
         ...(draggable ? { cursor: 'grab', userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'pan-y' } : {}),

@@ -4,10 +4,12 @@ import Link from "next/link";
 
 import Stack from "@/components/Stack";
 import { kindOf } from "@/components/komunitas/kind";
+import { useLiteMode } from "@/hooks/use-lite-mode";
 import type { CommunityCard } from "@/lib/data/content";
 import { formatDate, stripMarkdown } from "@/lib/format";
 
 export function KomunitasStack({ posts }: { posts: CommunityCard[] }) {
+    const lite = useLiteMode();
     const cards = posts.map((post) => {
         const kind = kindOf(post.kind);
         return (
@@ -35,7 +37,7 @@ export function KomunitasStack({ posts }: { posts: CommunityCard[] }) {
 
     return (
         <div className="mx-auto h-[26rem] w-full max-w-sm">
-            <Stack cards={cards} layout="fan" visible={4} radius={28} frame={6} frameColor="#ffffff" sendToBackOnClick={false} autoplay autoplayDelay={5000} pauseOnHover />
+            <Stack cards={cards} layout="fan" visible={4} radius={28} frame={6} frameColor="#ffffff" sendToBackOnClick={false} autoplay={!lite} autoplayDelay={5000} pauseOnHover />
         </div>
     );
 }

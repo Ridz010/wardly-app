@@ -86,7 +86,7 @@ export function QuotaMeter({ className }: { className?: string }) {
 export function ScanGate({ what = "memeriksa", next = "/bedah" }: { what?: string; next?: string }) {
     return (
         <div className="flex flex-col items-center gap-5 rounded-2xl border border-dashed border-border bg-muted/40 px-6 py-10 text-center">
-            <Image src="/animated_maskot.gif" alt="" width={72} height={72} unoptimized className="size-[72px] rounded-full bg-background object-contain" />
+            <Image src="/mascot/dity-small.webp" alt="" width={72} height={72} unoptimized className="size-[72px] rounded-full bg-background object-contain" />
             <div className="flex max-w-md flex-col gap-2">
                 <h3 className="font-heading text-2xl font-medium tracking-tight">Jatah gratis hari ini habis</h3>
                 <p className="text-sm text-muted-foreground">

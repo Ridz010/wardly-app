@@ -322,7 +322,8 @@ const ScrollStack = ({
     observer.observe(root);
     observer.observe(inner);
     target.addEventListener('scroll', onScroll, { passive: true });
-    target.addEventListener('wheel', onWheel, { passive: false });
+    // A non-passive wheel listener blocks compositor scrolling, so add it only when needed.
+    if (settingsRef.current?.smoothScroll) target.addEventListener('wheel', onWheel, { passive: false });
     target.addEventListener('pointerdown', onPress, { passive: true });
     window.addEventListener('pointerup', onRelease, { passive: true });
     window.addEventListener('pointercancel', onRelease, { passive: true });

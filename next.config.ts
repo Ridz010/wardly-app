@@ -52,7 +52,19 @@ const nextConfig: NextConfig = {
     return [{ source: "/modus", destination: "/radar", permanent: false }];
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      {
+        // File names in public/ are not hashed, so revalidate instead of using immutable.
+        source: "/:folder(mascot|section|icon)/:file*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=2592000",
+          },
+        ],
+      },
+    ];
   },
   turbopack: {
     rules: {

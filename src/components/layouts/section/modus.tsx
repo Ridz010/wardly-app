@@ -1,19 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { FiArrowRight } from "react-icons/fi";
 
 import AnimatedContent from "@/components/AnimatedContent";
 import BlurText from "@/components/BlurText";
 import DecryptedText from "@/components/DecryptedText";
-import Grainient from "@/components/Grainient";
 import Magnet from "@/components/Magnet";
 import OptionWheel from "@/components/OptionWheel";
 import ScrollVelocity from "@/components/ScrollVelocity";
-import ShinyText from "@/components/ShinyText";
+import { DeferUntilVisible } from "@/components/shared/defer-until-visible";
 import { buttonVariants } from "@/components/ui/button";
+import { useLiteMode } from "@/hooks/use-lite-mode";
 import { cn } from "@/lib/utils";
+
+const Grainient = dynamic(() => import("@/components/Grainient"), { ssr: false });
 
 const MODUS = [
     { title: "Paket tertahan", target: "Kurir palsu", status: "Meluas" },
@@ -38,6 +41,7 @@ const GRAIN_COLORS = ["#0b1a19", "#102322", "#14605a", "#258883", "#78dcb8"];
 
 const GRAIN_MASK_CLASS = `
     absolute inset-x-0 bottom-0 z-0 h-3/5
+    bg-linear-to-br from-[#102322] via-[#14605a] to-[#258883]
     [mask-image:linear-gradient(to_bottom,transparent,black_40%)]
     lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:w-3/5
     lg:[mask-image:linear-gradient(to_right,transparent,black_45%)]
@@ -52,33 +56,39 @@ const RADAR_SWEEP_CLASS = `
 export default function Modus() {
     const [active, setActive] = useState(0);
     const current = MODUS[active];
+    const lite = useLiteMode();
 
     return (
         <section id="modus" className="w-full px-4 py-10 sm:px-6">
             <div className="dark relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-background text-foreground">
-                <div className={GRAIN_MASK_CLASS}>
-                    <Grainient
-                        colors={GRAIN_COLORS}
-                        angle={55}
-                        flow={0.6}
-                        silk={0.35}
-                        grainAmount={0.06}
-                        type="linear"
-                        bands={1}
-                        softness={1}
-                        scale={1}
-                        speed={0.6}
-                        grainSize={1.2}
-                        grainAnimated
-                        contrast={1}
-                        saturation={0.9}
-                        variation={0}
-                        interactive
-                        stir={1}
-                        clickSwirl
-                        intro
-                    />
-                </div>
+                {lite ? (
+                    <div aria-hidden="true" className={GRAIN_MASK_CLASS} />
+                ) : (
+                    <DeferUntilVisible className={GRAIN_MASK_CLASS}>
+                        <Grainient
+                            colors={GRAIN_COLORS}
+                            angle={55}
+                            flow={0.6}
+                            silk={0.35}
+                            grainAmount={0.06}
+                            type="linear"
+                            bands={1}
+                            softness={1}
+                            scale={1}
+                            speed={0.6}
+                            grainSize={1.2}
+                            grainAnimated={false}
+                            contrast={1}
+                            saturation={0.9}
+                            variation={0}
+                            interactive={false}
+                            clickSwirl={false}
+                            intro
+                            dpr={1}
+                            maxFps={30}
+                        />
+                    </DeferUntilVisible>
+                )}
 
                 <div className="relative z-10 grid items-center gap-10 px-6 pt-12 pb-10 sm:px-10 lg:grid-cols-2 lg:gap-16 lg:px-14 lg:pt-20 lg:pb-14">
                     <div className="relative font-light">
@@ -109,7 +119,7 @@ export default function Modus() {
                                     spacing={1.4}
                                     curve={1}
                                     tilt={6}
-                                    blur={2}
+                                    blur={0}
                                     fade={0.25}
                                     smoothing={200}
                                     inset={16}

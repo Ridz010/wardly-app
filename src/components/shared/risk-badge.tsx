@@ -17,6 +17,14 @@ export const LEVEL_META: Record<Level, { label: string; tone: string }> = {
     },
 };
 
+export function InconclusiveBadge() {
+    return (
+        <Badge variant="secondary" className="rounded-full bg-muted font-normal text-muted-foreground">
+            Belum bisa dinilai
+        </Badge>
+    );
+}
+
 export function RiskBadge({ level, className }: { level: Level; className?: string }) {
     const meta = LEVEL_META[level];
     return (

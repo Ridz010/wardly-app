@@ -54,7 +54,7 @@ export function AnalyzeForm({ signedIn }: { signedIn: boolean }) {
             <FieldDescription className="flex items-center justify-between gap-4">
               <span className="flex items-center gap-1.5">
                 <ShieldCheckIcon className="size-3.5 text-primary" />
-                Nomor, email, dan rekening disamarkan sebelum dianalisis.
+                Nomor, email, dan rekening disamarkan dulu, lalu teks dikirim ke layanan AI pihak ketiga (OpenRouter) untuk analisis tambahan.
               </span>
               <span className="tabular-nums">{length}/{LIMIT}</span>
             </FieldDescription>

@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { Enums } from "@/lib/supabase/types";
 import type { Hit } from "./url-check";
 
-import { levelFromScore, maxLevel, type Level } from "@/lib/risk";
+import { levelFromScore, maxLevel, normalizeScore, type Level } from "@/lib/risk";
 
 export { levelFromScore, maxLevel, type Level };
 
@@ -26,15 +26,17 @@ export const invalidateRulesCache = () => {
     cache = null;
 };
 
+/** A failed or empty load is never cached, so it cannot zero out scans for the whole TTL. */
 async function loadRules(): Promise<Rule[]> {
     if (cache && Date.now() - cache.at < TTL) return cache.rules;
-    const { data } = await createAdminClient()
+    const { data, error } = await createAdminClient()
         .from("red_flag_rules")
         .select(
             "code,label,explanation,pattern,weight,applies_to,category:scam_categories(slug)",
         )
         .eq("is_active", true);
-    cache = { at: Date.now(), rules: (data as unknown as Rule[]) ?? [] };
+    if (error || !data?.length) return cache?.rules ?? [];
+    cache = { at: Date.now(), rules: data as unknown as Rule[] };
     return cache.rules;
 }
 
@@ -50,7 +52,7 @@ export async function analyzeRules(text: string) {
                     code: rule.code,
                     label: rule.label,
                     explanation: rule.explanation,
-                    weight: rule.weight,
+                    weight: normalizeScore(rule.weight),
                     category: rule.category?.slug,
                 });
             }
@@ -59,11 +61,8 @@ export async function analyzeRules(text: string) {
         }
     }
 
-    const score = Math.min(
-        100,
-        hits.reduce((sum, hit) => sum + hit.weight, 0),
-    );
-    return { hits, score };
+    const score = normalizeScore(hits.reduce((sum, hit) => sum + hit.weight, 0));
+    return { hits, score, available: rules.length > 0 };
 }
 
 export function topCategory(hits: Hit[]) {

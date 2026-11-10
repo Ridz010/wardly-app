@@ -4,9 +4,10 @@ import { ArrowRightIcon, CheckIcon, ShieldAlertIcon } from "lucide-react";
 import AnimatedContent from "@/components/AnimatedContent";
 import BorderGlow from "@/components/BorderGlow";
 import { ScrollIntoView } from "@/components/bedah/scroll-into-view";
-import { LEVEL_META, RiskBadge } from "@/components/shared/risk-badge";
+import { InconclusiveBadge, LEVEL_META, RiskBadge } from "@/components/shared/risk-badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "cn";
+import { normalizeScore, scoreCaption } from "@/lib/risk";
 import type { AnalysisResult } from "@/lib/services/analyze";
 
 const BAR_TONE = {
@@ -23,9 +24,10 @@ const GLOW = {
 
 export function AnalysisReport({ result }: { result: AnalysisResult }) {
   const reasons = result.reasons.slice(0, 6);
+  const score = normalizeScore(result.score);
 
   return (
-    <AnimatedContent distance={32} duration={0.7} blur={6}>
+    <AnimatedContent distance={32} duration={0.7}>
       <ScrollIntoView />
       <BorderGlow
         backgroundColor="#ffffff"
@@ -33,21 +35,27 @@ export function AnalysisReport({ result }: { result: AnalysisResult }) {
         colors={[...GLOW[result.level].colors]}
         borderRadius={28}
         glowRadius={32}
-        animated
       >
         <div className="flex flex-col gap-6 p-6 sm:p-8">
           <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <RiskBadge level={result.level} />
-              <span className="text-sm tabular-nums text-muted-foreground">
-                Skor {result.score}/100
-              </span>
-            </div>
-            <Progress
-              value={result.score}
-              aria-label={LEVEL_META[result.level].label}
-              className={cn("gap-0", BAR_TONE[result.level])}
-            />
+            {result.inconclusive ? (
+              <InconclusiveBadge />
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <RiskBadge level={result.level} />
+                  <span className="text-sm tabular-nums text-muted-foreground">
+                    Skor risiko {score}/100
+                  </span>
+                </div>
+                <Progress
+                  value={score}
+                  aria-label={`${LEVEL_META[result.level].label}, skor ${score} dari 100`}
+                  className={cn("gap-0", BAR_TONE[result.level])}
+                />
+                <p className="text-xs text-muted-foreground">{scoreCaption(score, result.level)}</p>
+              </div>
+            )}
             <p className="font-heading text-xl font-light leading-snug tracking-tight text-balance sm:text-2xl">
               {result.summary}
             </p>

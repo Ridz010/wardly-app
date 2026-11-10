@@ -10,6 +10,13 @@ const OFFICIAL: Record<string, string[]> = {
   pertamina: ['pertamina.com'], telkomsel: ['telkomsel.com'],
 }
 
+// Scam messages often drop the scheme ("bit.ly/hadiah"), so bare domains count when the TLD is a known one.
+const BARE_TLDS = ['com', 'net', 'org', 'id', 'co', 'me', 'ly', 'gd', 'at', 'info', 'site', 'online', 'link', 'shop', 'store', ...RISKY_TLDS]
+const URL_PATTERN = new RegExp(
+  String.raw`\bhttps?:\/\/[^\s<>"')]+|\bwww\.[^\s<>"')]+|(?<![@\w.-])(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+(?:${BARE_TLDS.join('|')})\b(?:\/[^\s<>"')]*)?`,
+  'gi',
+)
+
 function registrable(host: string) {
   const p = host.split('.')
   const sld = ['co', 'go', 'or', 'ac', 'web', 'sch', 'my']
@@ -17,7 +24,7 @@ function registrable(host: string) {
 }
 
 export function extractUrls(text: string) {
-  return Array.from(text.matchAll(/\bhttps?:\/\/[^\s<>"')]+|\b(?:www\.)[^\s<>"')]+/gi)).map((m) => m[0])
+  return Array.from(text.matchAll(URL_PATTERN)).map((m) => m[0])
 }
 
 export function analyzeUrls(text: string) {
@@ -25,7 +32,7 @@ export function analyzeUrls(text: string) {
   const urls = extractUrls(text)
   for (const raw of urls) {
     let u: URL
-    try { u = new URL(raw.startsWith('http') ? raw : `https://${raw}`) } catch { continue }
+    try { u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`) } catch { continue }
     const host = u.hostname.toLowerCase()
     const reg = registrable(host)
     const add = (h: Hit) => hits.push({ ...h, label: `${h.label} (${host})` })

@@ -38,7 +38,7 @@ export function PlayerCard({
   if (!progress) {
     return (
       <div className="relative flex flex-col gap-5 overflow-hidden rounded-[2rem] bg-linear-to-br from-[#0b4a5c] via-[#158ab0] to-[#2fb6c9] p-6 text-white sm:flex-row sm:items-center sm:p-8">
-        <Image src="/animated_maskot.gif" alt="" width={112} height={112} unoptimized className="size-24 shrink-0 object-contain sm:size-28" />
+        <Image src="/mascot/menunjuk.png" alt="" width={112} height={112} className="size-24 shrink-0 object-contain sm:size-28" />
         <div className="flex flex-1 flex-col gap-2">
           <h2 className="font-heading text-2xl font-medium tracking-tight">Main sebagai tamu, atau simpan progresmu.</h2>
           <p className="max-w-lg text-sm text-white/80">
@@ -65,7 +65,7 @@ export function PlayerCard({
       <div aria-hidden="true" className="pointer-events-none absolute -top-20 -right-16 size-72 rounded-full bg-brand-aqua/30 blur-3xl" />
       <div className="relative flex items-center gap-4">
         <span className="relative">
-          <Image src="/animated_maskot.gif" alt="" width={96} height={96} unoptimized className="size-20 object-contain" />
+          <Image src="/mascot/menunjuk.png" alt="" width={96} height={96} className="size-20 object-contain" />
           <span className="absolute -right-1 -bottom-1 flex size-8 items-center justify-center rounded-full bg-white font-heading text-sm text-brand-deep shadow">
             {level.level}
           </span>
@@ -93,7 +93,7 @@ export function PlayerCard({
       </div>
 
       <dl className="relative grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-2xl bg-white/10 px-4 py-3 backdrop-blur">
+        <div className="rounded-2xl bg-white/15 px-4 py-3">
           <dt className="flex items-center justify-center gap-1 text-xs text-white/70">
             <FlameIcon className="size-3.5" /> Streak
           </dt>
@@ -101,7 +101,7 @@ export function PlayerCard({
             <CountUp to={progress.streak} />
           </dd>
         </div>
-        <div className="rounded-2xl bg-white/10 px-4 py-3 backdrop-blur">
+        <div className="rounded-2xl bg-white/15 px-4 py-3">
           <dt className="flex items-center justify-center gap-1 text-xs text-white/70">
             <SwordsIcon className="size-3.5" /> Misi
           </dt>
@@ -109,7 +109,7 @@ export function PlayerCard({
             {played}/{total}
           </dd>
         </div>
-        <div className="rounded-2xl bg-white/10 px-4 py-3 backdrop-blur">
+        <div className="rounded-2xl bg-white/15 px-4 py-3">
           <dt className="flex items-center justify-center gap-1 text-xs text-white/70">
             <TrophyIcon className="size-3.5" /> Bintang
           </dt>

@@ -2,10 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 
 import AnimatedContent from "@/components/AnimatedContent";
-import TextPressure from "@/components/TextPressure";
+import FooterWordmark from "@/components/layouts/section/footer-wordmark";
 import { menus } from "@/lib/navigation";
 
 const LEGAL = [
+    { title: "FAQ", href: "/faq" },
     { title: "Keamanan", href: "/security" },
     { title: "Syarat layanan", href: "/terms" },
     { title: "Kebijakan privasi", href: "/privacy" },
@@ -13,11 +14,6 @@ const LEGAL = [
 
 const LINK_CLASS =
     "text-muted-foreground transition-colors duration-300 hover:text-foreground";
-
-const WORDMARK = {
-    fill: "#102322",
-    stroke: "#258883",
-};
 
 export default function Footer() {
     return (
@@ -78,19 +74,7 @@ export default function Footer() {
                     aria-hidden="true"
                     className="mx-auto mt-6 h-28 w-full max-w-384 px-4 sm:h-44 lg:h-64"
                 >
-                    <TextPressure
-                        text="WARDLY"
-                        width
-                        weight
-                        italic={false}
-                        alpha={false}
-                        flex
-                        stroke
-                        scale
-                        textColor={WORDMARK.fill}
-                        strokeColor={WORDMARK.stroke}
-                        minFontSize={36}
-                    />
+                    <FooterWordmark />
                 </div>
             </AnimatedContent>
         </footer>

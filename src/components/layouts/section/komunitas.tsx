@@ -60,7 +60,7 @@ export default async function Komunitas() {
                     </AnimatedContent>
                 </div>
 
-                <AnimatedContent distance={40} duration={0.9} blur={8}>
+                <AnimatedContent distance={40} duration={0.9}>
                     {posts.length ? (
                         <KomunitasStack posts={posts.slice(0, 5)} />
                     ) : (

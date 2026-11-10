@@ -27,6 +27,7 @@ export interface GrainientProps extends Omit<HTMLAttributes<HTMLDivElement>, 'st
   intro?: boolean;
   lightMode?: boolean;
   dpr?: number;
+  maxFps?: number;
   style?: CSSProperties;
 }
 
@@ -52,6 +53,7 @@ type Settings = {
   intro: boolean;
   lightMode: boolean;
   dpr?: number;
+  maxFps?: number;
 };
 
 type Sample = { x: number; y: number; vx: number; vy: number; age: number; grow: number; done: boolean };
@@ -331,6 +333,7 @@ const Grainient = ({
   intro = true,
   lightMode = false,
   dpr,
+  maxFps,
   className = '',
   style,
   ...rest
@@ -360,7 +363,8 @@ const Grainient = ({
     clickSwirl,
     intro,
     lightMode,
-    dpr
+    dpr,
+    maxFps
   };
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -572,6 +576,10 @@ const Grainient = ({
       raf = 0;
       if (!visible || document.hidden) return;
       const s = settingsRef.current;
+      if (s.maxFps && last && now - last < 1000 / s.maxFps - 1) {
+        raf = requestAnimationFrame(frame);
+        return;
+      }
       const dt = last ? clamp((now - last) / 1000, 0.001, 0.05) : 1 / 60;
       last = now;
       if (!reduce) time += dt * s.speed * 0.16;

@@ -52,7 +52,7 @@ export function AuthShell({ title, description, children }: Props) {
           </div>
           <div className="pointer-events-none absolute inset-0 -z-10 flex items-end justify-center">
             <Image
-              src="/animated_maskot.gif"
+              src="/mascot/dity.webp"
               alt=""
               width={480}
               height={480}

@@ -81,7 +81,7 @@ async function Article({ params }: { params: PageProps<"/blog/[slug]">["params"]
         </AnimatedContent>
       </header>
 
-      <AnimatedContent distance={32} duration={0.8} blur={8}>
+      <AnimatedContent distance={32} duration={0.8}>
         <div className="aspect-21/9 w-full overflow-hidden rounded-3xl border border-border bg-muted">
           {post.cover_url ? (
             <img src={post.cover_url} alt="" className="h-full w-full object-cover" />

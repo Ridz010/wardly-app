@@ -1,6 +1,5 @@
 import AnimatedContent from "@/components/AnimatedContent";
 import BlurText from "@/components/BlurText";
-import GradientText from "@/components/GradientText";
 import { cn } from "cn";
 
 type Props = {
@@ -14,7 +13,7 @@ type Props = {
 };
 
 const TITLE_CLASS = "font-heading text-3xl font-medium leading-[1.1] tracking-tight sm:text-5xl";
-const GRADIENT = ["#0B4A5C", "#158AB0", "#2FB6C9", "#158AB0"];
+const HIGHLIGHT_CLASS = "bg-linear-to-r from-[#0B4A5C] via-[#158AB0] to-[#2FB6C9] bg-clip-text text-transparent";
 
 export function PageHeader({
     title,
@@ -36,7 +35,8 @@ export function PageHeader({
                 {meta ? <div className="flex flex-wrap items-center gap-2">{meta}</div> : null}
 
                 {animate ? (
-                    <div role="heading" aria-level={1} className="flex flex-wrap items-baseline gap-x-[0.25em]">
+                    // The text size here only scales the em-based gap to match the title.
+                    <div role="heading" aria-level={1} className="flex flex-wrap items-baseline gap-x-[0.25em] text-3xl sm:text-5xl">
                         <BlurText
                             text={title}
                             trigger="load"
@@ -48,9 +48,7 @@ export function PageHeader({
                             className={cn(TITLE_CLASS, "text-foreground")}
                         />
                         {highlight ? (
-                            <GradientText colors={GRADIENT} animationSpeed={7} className={TITLE_CLASS}>
-                                {highlight}
-                            </GradientText>
+                            <span className={cn(TITLE_CLASS, HIGHLIGHT_CLASS)}>{highlight}</span>
                         ) : null}
                     </div>
                 ) : (

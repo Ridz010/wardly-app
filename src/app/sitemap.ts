@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 import { publicEnv } from "@/env/public";
 import { getBlogPosts, getGuides, getScenarios } from "@/lib/data/content";
 
-const STATIC = ["", "/bedah", "/latih", "/lindungi", "/komunitas", "/blog", "/radar", "/privacy", "/terms", "/security"];
+const STATIC = ["", "/bedah", "/latih", "/lindungi", "/komunitas", "/blog", "/radar", "/faq", "/privacy", "/terms", "/security"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [posts, guides, scenarios] = await Promise.all([getBlogPosts(), getGuides(), getScenarios()]);

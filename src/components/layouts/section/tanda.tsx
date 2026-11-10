@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { FiArrowRight } from "react-icons/fi";
 
 import AnimatedContent from "@/components/AnimatedContent";
 import BlurText from "@/components/BlurText";
-import FallingText from "@/components/FallingText";
 import { buttonVariants } from "@/components/ui/button";
+import { useLiteMode } from "@/hooks/use-lite-mode";
 import { cn } from "@/lib/utils";
+
+const FallingText = dynamic(() => import("@/components/FallingText"), { ssr: false });
 
 const CLOSING_TEXT =
     "Tarik napas dulu. Jangan buru-buru. Cek dulu pesannya. Baru balas.";
@@ -18,6 +21,7 @@ const CLOSING_HIGHLIGHT = ["napas", "Cek", "balas"];
 export default function Tanda() {
     const areaRef = useRef<HTMLDivElement>(null);
     const [fallen, setFallen] = useState(false);
+    const lite = useLiteMode();
 
     useEffect(() => {
         const area = areaRef.current;
@@ -67,7 +71,11 @@ export default function Tanda() {
                     data-cursor-label="Seret"
                     className="cursor-target relative mt-4 h-72 w-full border-b border-border sm:h-80"
                 >
-                    {fallen && (
+                    {lite ? (
+                        <p className="flex h-full items-center justify-center text-2xl leading-relaxed text-balance sm:text-3xl">
+                            {CLOSING_TEXT}
+                        </p>
+                    ) : fallen && (
                         <FallingText
                             text={CLOSING_TEXT}
                             highlightWords={CLOSING_HIGHLIGHT}

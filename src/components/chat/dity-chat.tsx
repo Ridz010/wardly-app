@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -8,7 +9,6 @@ import { SendIcon, XIcon } from "lucide-react";
 import { askDityAction } from "@/app/(site)/_chat/actions";
 import Magnet from "@/components/Magnet";
 import ShinyText from "@/components/ShinyText";
-import TextType from "@/components/TextType";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,11 +22,15 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "cn";
 
+// The teaser appears seconds after load; loading it lazily keeps GSAP out of every page's first bundle.
+const TextType = dynamic(() => import("@/components/TextType"), { ssr: false });
+
 type Turn = { role: "user" | "assistant"; content: string };
 
 const GREETING: Turn = {
   role: "assistant",
-  content: "Hai, aku Dity. Ceritakan apa yang membuatmu ragu. Jangan tulis nomor, rekening, atau OTP ya.",
+  content:
+    "Hai, aku Dity. Ceritakan apa yang membuatmu ragu. Pesanmu diproses oleh layanan AI pihak ketiga, jadi jangan tulis nomor, rekening, atau OTP ya.",
 };
 
 const SUGGESTIONS = [
@@ -105,7 +109,7 @@ export function DityChat({ signedIn }: { signedIn: boolean }) {
             role="status"
             className="relative max-w-[16rem] rounded-2xl rounded-br-md border border-border bg-background px-4 py-3 pr-9 text-sm shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-500"
           >
-            <TextType text={TEASERS} typingSpeed={38} pauseDuration={2200} deletingSpeed={18} loop showCursor cursorCharacter="|" className="text-foreground" />
+            <TextType text={TEASERS} typingSpeed={38} pauseDuration={2200} deletingSpeed={18} loop={false} showCursor cursorCharacter="|" className="text-foreground" />
             <button
               type="button"
               onClick={dismissTeaser}
@@ -127,7 +131,7 @@ export function DityChat({ signedIn }: { signedIn: boolean }) {
             }
           >
             <span className="relative">
-              <Image src="/animated_maskot.gif" alt="" width={48} height={48} unoptimized className="size-12 rounded-full bg-white object-contain" />
+              <Image src="/mascot/tertawa.png" alt="" width={96} height={76} className="size-12 rounded-full bg-white object-cover" />
               <span className="absolute -top-0.5 -right-0.5 flex size-3.5">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand-aqua opacity-75" />
                 <span className="relative inline-flex size-3.5 rounded-full border-2 border-primary bg-brand-aqua" />
@@ -144,7 +148,7 @@ export function DityChat({ signedIn }: { signedIn: boolean }) {
       <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b border-border p-4">
           <div className="flex items-center gap-3">
-            <Image src="/animated_maskot.gif" alt="" width={44} height={44} unoptimized className="size-11 rounded-full bg-muted object-contain" />
+            <Image src="/mascot/tertawa.png" alt="" width={96} height={76} className="size-11 rounded-full bg-white object-cover" />
             <div>
               <SheetTitle className="font-heading text-lg font-light">Dity</SheetTitle>
               <SheetDescription>Teman tenang saat kamu ragu.</SheetDescription>

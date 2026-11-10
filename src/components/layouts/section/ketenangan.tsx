@@ -100,11 +100,10 @@ export default function Ketenangan() {
                 </div>
 
                 <Image
-                    src="/animated_maskot.gif"
+                    src="/mascot/berjalan.png"
                     alt=""
-                    width={200}
-                    height={200}
-                    unoptimized
+                    width={160}
+                    height={160}
                     className="absolute bottom-16 left-[6%] z-10 size-28 object-contain sm:bottom-24 sm:size-40"
                 />
 

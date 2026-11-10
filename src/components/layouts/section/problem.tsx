@@ -5,6 +5,8 @@ import { FiArrowRight } from "react-icons/fi";
 import AnimatedContent from "@/components/AnimatedContent";
 import ScrollStack, { ScrollStackItem } from "@/components/ScrollStack";
 
+import "./landing.css";
+
 const CARDS = [
     { src: "/section/gambar1.png", alt: "Dapat pesan aneh" },
     { src: "/section/gambar2.png", alt: "Lagi ditelepon" },
@@ -12,11 +14,17 @@ const CARDS = [
     { src: "/section/gambar4.png", alt: "Mau latihan bareng" },
 ];
 
-const CARD_CLASS = "h-auto! overflow-visible! bg-transparent! p-0! shadow-none!";
+// ScrollStack.css is unlayered, so these overrides need `!` to beat it.
+// The card stays a plain surface; the colour lives on the section behind the stack.
+const CARD_CLASS = `
+    h-auto! overflow-hidden! p-0! bg-card!
+    shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-brand-mint)_45%,transparent),0_-10px_32px_-18px_color-mix(in_oklab,var(--color-brand-teal)_35%,transparent),0_28px_56px_-24px_color-mix(in_oklab,var(--color-brand-teal)_55%,transparent)]!
+`;
 
 export default function Problem() {
     return (
-        <section id="problem" className="relative w-full bg-background">
+        <section id="problem" className="problem-backdrop relative isolate w-full">
+            <div aria-hidden="true" className="problem-backdrop__glow" />
             <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
                 {/* Teks kiri, CTA kanan */}
                 <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
@@ -49,6 +57,7 @@ export default function Problem() {
                 <div className="mt-12 w-full lg:mt-16">
                     <ScrollStack
                         useWindowScroll
+                        smoothScroll={false}
                         itemDistance={80}
                         itemStackDistance={24}
                         stackPosition="25%"
@@ -70,7 +79,6 @@ export default function Problem() {
                                         height={720}
                                         sizes="(min-width: 1152px) 1152px, 100vw"
                                         className="h-auto w-full select-none"
-                                        priority={index === 0}
                                     />
                                 </AnimatedContent>
                             </ScrollStackItem>

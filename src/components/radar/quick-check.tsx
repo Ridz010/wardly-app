@@ -8,7 +8,7 @@ import AnimatedContent from "@/components/AnimatedContent";
 import { PendingNote } from "@/components/bedah/pending-note";
 import { QuotaMeter, ScanGate, ScanProvider, useScan, useSyncQuota } from "@/components/bedah/scan-context";
 import { FormFeedback, fieldError } from "@/components/shared/form-feedback";
-import { RiskBadge } from "@/components/shared/risk-badge";
+import { InconclusiveBadge, RiskBadge } from "@/components/shared/risk-badge";
 import { SubmitButton } from "@/components/shared/submit-button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
@@ -77,11 +77,17 @@ function QuickCheckBody() {
         {state.status === "success" && state.data ? (
           <AnimatedContent key={state.data.score + state.data.hits.length} distance={16} duration={0.45} trigger="mount">
             <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-3">
-                <RiskBadge level={state.data.level} />
-                <span className="text-sm tabular-nums text-muted-foreground">Skor {state.data.score}/100</span>
-              </div>
-              {state.data.hits.length ? (
+              {state.data.inconclusive ? (
+                <InconclusiveBadge />
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <RiskBadge level={state.data.level} />
+                  <span className="text-sm tabular-nums text-muted-foreground">Skor risiko {state.data.score}/100</span>
+                </div>
+              )}
+              {state.data.inconclusive ? (
+                <p className="text-sm text-muted-foreground">Daftar pola sedang tidak bisa dimuat, jadi hasil ini bukan berarti pesannya aman. Coba lagi beberapa saat lagi.</p>
+              ) : state.data.hits.length ? (
                 <ul className="flex flex-col gap-2 text-sm">
                   {state.data.hits.slice(0, 5).map((hit) => (
                     <li key={hit.code} className="flex flex-col">
@@ -91,7 +97,7 @@ function QuickCheckBody() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">Tidak ada pola yang cocok. Untuk analisis lebih dalam, pakai halaman Bedah.</p>
+                <p className="text-sm text-muted-foreground">Skor 0 berarti tidak ada pola yang cocok, bukan jaminan pesan ini aman. Untuk analisis lebih dalam, pakai halaman Bedah.</p>
               )}
             </div>
           </AnimatedContent>

@@ -13,7 +13,7 @@ export default function PrivacyPage() {
         {
           heading: "Data yang kami proses",
           body: [
-            "Pesan yang kamu tempel diproses untuk dianalisis. Nomor telepon, email, nomor kartu, dan rekening disamarkan sebelum teks diteruskan ke layanan analisis.",
+            "Pesan yang kamu tempel diproses untuk dianalisis. Nomor telepon, email, nomor kartu, dan rekening disamarkan sebelum teks diteruskan ke layanan AI pihak ketiga (OpenRouter) untuk analisis tambahan. Screenshot dan chat dengan Dity juga diproses oleh layanan tersebut.",
             "Riwayat pemeriksaan hanya disimpan jika kamu masuk dan mengaktifkan penyimpanan riwayat di pengaturan.",
           ],
         },

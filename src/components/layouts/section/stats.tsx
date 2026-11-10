@@ -70,15 +70,15 @@ export default async function Stats() {
         <section id="angka" className="w-full bg-background">
             <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
                 <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,18rem)_1fr] lg:gap-16">
-                    <AnimatedContent distance={40} duration={0.9} blur={8} className="flex justify-center lg:justify-start">
+                    <AnimatedContent distance={40} duration={0.9} className="flex justify-center lg:justify-start">
                         <div className="relative">
                             <div aria-hidden="true" className="absolute inset-6 rounded-full bg-brand-aqua/30 blur-3xl" />
                             <Image
-                                src="/animated_maskot.gif"
+                                src="/mascot/senang.png"
                                 alt="Dity, maskot Ward-Ly"
-                                width={288}
-                                height={288}
-                                unoptimized
+                                width={256}
+                                height={256}
+                                sizes="(min-width: 640px) 256px, 192px"
                                 className="relative size-48 object-contain sm:size-64"
                             />
                         </div>

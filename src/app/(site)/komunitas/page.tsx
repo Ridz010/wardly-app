@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { CircleCheckIcon } from "lucide-react";
 import { Suspense } from "react";
 
@@ -62,6 +63,16 @@ export default function KomunitasPage({ searchParams }: PageProps<"/komunitas">)
         title="Suara komunitas:"
         highlight="belajar dari cerita nyata."
         description="Baca peringatan dan pengalaman pengguna lain sebelum kamu jadi korban berikutnya. Semua cerita ditinjau moderator sebelum tampil."
+        actions={
+          <Image
+            src="/mascot/membaca-buku.png"
+            alt=""
+            width={160}
+            height={160}
+            priority
+            className="hidden size-36 object-contain sm:block lg:size-40"
+          />
+        }
       />
       <Suspense fallback={<PageLoader />}>
         <Feed searchParams={searchParams} />

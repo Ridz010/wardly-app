@@ -31,6 +31,7 @@ export interface GradientASCIIProps extends Omit<HTMLAttributes<HTMLDivElement>,
   lightMode?: boolean;
   fontFamily?: string;
   dpr?: number;
+  maxFps?: number;
   style?: CSSProperties;
 }
 
@@ -58,6 +59,7 @@ type Settings = {
   lightMode: boolean;
   fontFamily: string;
   dpr?: number;
+  maxFps?: number;
 };
 
 type Program = { program: WebGLProgram; uniforms: Record<string, WebGLUniformLocation | null> };
@@ -516,6 +518,7 @@ const GradientASCII = ({
   lightMode = false,
   fontFamily = DEFAULT_FONT,
   dpr,
+  maxFps,
   className = '',
   style,
   ...rest
@@ -547,7 +550,8 @@ const GradientASCII = ({
     intro,
     lightMode,
     fontFamily: fontFamily || DEFAULT_FONT,
-    dpr
+    dpr,
+    maxFps
   };
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -796,6 +800,10 @@ const GradientASCII = ({
       raf = 0;
       if (disposed || !visible || document.hidden) return;
       const s = settingsRef.current;
+      if (s.maxFps && last && now - last < 1000 / s.maxFps - 1) {
+        raf = requestAnimationFrame(frame);
+        return;
+      }
       const dt = last ? clamp((now - last) / 1000, 0.001, 0.05) : 1 / 60;
       last = now;
       if (!reduce) {

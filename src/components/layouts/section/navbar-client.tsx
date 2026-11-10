@@ -4,22 +4,27 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 
 import CardNav from "@/components/CardNav";
-import { menus } from "@/lib/navigation";
+import NavbarDesktop from "@/components/layouts/section/navbar-desktop";
+import { menusFor, navGroups, navLinks } from "@/lib/navigation";
 
-const GROUPS = [
-    { label: "Periksa", description: "Cek pesan mencurigakan dan pantau pola yang sedang ramai.", hrefs: ["/bedah", "/radar"] },
-    { label: "Belajar", description: "Latihan lewat simulasi dan panduan perlindungan.", hrefs: ["/latih", "/lindungi"] },
-    { label: "Bersama", description: "Cerita dari komunitas dan catatan keamanan terbaru.", hrefs: ["/komunitas", "/blog"] },
+const toLink = ({ title, href }: { title: string; href: string }) => ({
+    label: title,
+    href,
+    ariaLabel: `Buka halaman ${title}`,
+});
+
+const NAV_ITEMS = [
+    ...navGroups.map(({ label, description, hrefs }) => ({
+        label,
+        description,
+        links: menusFor(hrefs).map(toLink),
+    })),
+    {
+        label: "Info",
+        description: "Cara kerja, pertanyaan umum, dan komitmen privasi.",
+        links: [...navLinks.before, ...navLinks.after].map(toLink),
+    },
 ];
-
-const NAV_ITEMS = GROUPS.map(({ label, description, hrefs }) => ({
-    label,
-    description,
-    links: hrefs.flatMap((href) => {
-        const menu = menus.find((item) => item.href === href);
-        return menu ? [{ label: menu.title, href, ariaLabel: `Buka halaman ${menu.title}` }] : [];
-    }),
-}));
 
 const NAV_THEME = {
     "--cn-panel": "var(--background)",
@@ -43,21 +48,25 @@ const NAV_THEME = {
 export default function NavbarClient({ signedIn }: { signedIn: boolean }) {
     return (
         <header className="fixed inset-x-0 top-3 z-50 px-4 sm:px-6">
-            <CardNav
-                logo="/icon/logo.svg"
-                logoAlt="Ward-Ly"
-                logoHref="/"
-                items={NAV_ITEMS}
-                cta={signedIn ? { label: "Dashboard", href: "/dashboard" } : { label: "Coba Sekarang", href: "/bedah" }}
-                theme="light"
-                surface="solid"
-                cardEffect="rise"
-                maxWidth={1152}
-                linkComponent={Link}
-                ariaLabel="Navigasi utama"
-                className="[&_.card-nav__cta]:rounded-full"
-                style={NAV_THEME}
-            />
+            {/* Desktop: spread-out menu with dropdowns. Below lg: the compact card menu. */}
+            <NavbarDesktop signedIn={signedIn} />
+            <div className="lg:hidden">
+                <CardNav
+                    logo="/icon/logo.svg"
+                    logoAlt="Ward-Ly"
+                    logoHref="/"
+                    items={NAV_ITEMS}
+                    cta={signedIn ? { label: "Dashboard", href: "/dashboard" } : { label: "Coba Sekarang", href: "/bedah" }}
+                    theme="light"
+                    surface="solid"
+                    cardEffect="rise"
+                    maxWidth={1152}
+                    linkComponent={Link}
+                    ariaLabel="Navigasi utama"
+                    className="[&_.card-nav__cta]:rounded-full"
+                    style={NAV_THEME}
+                />
+            </div>
         </header>
     );
 }

@@ -43,7 +43,7 @@ function StepCard({ no, tone, title, desc }: (typeof STEPS)[number]) {
     return (
         <div className="flex h-full flex-col gap-5">
             <div className="aurora-pill flex h-24 w-full items-center justify-center sm:h-28" data-tone={tone}>
-                <span className="relative z-10 rounded-full bg-white/85 px-3 py-1 text-[0.7rem] text-foreground shadow-sm backdrop-blur">
+                <span className="relative z-10 rounded-full bg-white/85 px-3 py-1 text-[0.7rem] text-foreground shadow-sm">
                     Langkah {no}
                 </span>
             </div>
@@ -64,11 +64,10 @@ function CtaCard() {
             </svg>
             <div className="relative flex h-full flex-col items-center gap-6 p-6 sm:flex-row sm:p-8">
                 <Image
-                    src="/animated_maskot.gif"
+                    src="/mascot/melambaikan-tangan.png"
                     alt=""
-                    width={220}
-                    height={220}
-                    unoptimized
+                    width={192}
+                    height={192}
                     className="size-32 shrink-0 object-contain drop-shadow-[0_18px_30px_rgba(0,0,0,0.25)] sm:size-48"
                 />
                 <div className="flex flex-col items-start gap-5 text-white">
@@ -129,10 +128,9 @@ export default function FiturBento() {
                     enableBorderGlow
                     enableSpotlight
                     spotlightRadius={320}
-                    enableStars
-                    particleCount={10}
+                    enableStars={false}
                     enableTilt={false}
-                    enableMagnetism
+                    enableMagnetism={false}
                     clickEffect
                     intro
                 />

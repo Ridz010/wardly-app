@@ -41,12 +41,11 @@ export function DityTips({ mode }: { mode: string }) {
     <SpotlightCard className="rounded-3xl border border-border bg-card p-5">
       <div className="flex items-start gap-4">
         <Image
-          src="/animated_maskot.gif"
+          src="/mascot/bersama-teman.png"
           alt=""
-          width={72}
-          height={72}
-          unoptimized
-          className="size-[4.5rem] shrink-0 object-contain"
+          width={80}
+          height={80}
+          className="size-20 shrink-0 object-contain"
         />
         <div className="flex min-w-0 flex-col gap-2">
           <span className="text-sm font-normal text-foreground">Dity mengingatkan</span>

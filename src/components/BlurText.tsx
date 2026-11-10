@@ -81,7 +81,7 @@ const SR_ONLY: CSSProperties = {
   userSelect: 'none'
 };
 
-const PIECE_STYLE: CSSProperties = { display: 'inline-block', willChange: 'transform, filter, opacity' };
+const PIECE_STYLE: CSSProperties = { display: 'inline-block' };
 const WORD_STYLE: CSSProperties = { display: 'inline-flex' };
 
 const blurTo = (px: number) => `blur(${Math.max(0, px)}px)`;
@@ -187,6 +187,20 @@ const buildEffect = (
   };
 };
 
+const withoutFilter = (snapshot: Snapshot): Snapshot => {
+  const next = { ...snapshot };
+  delete next.filter;
+  return next;
+};
+
+// Animating blur on every word repaints each one per frame, so only transform and opacity animate.
+const lightEffect = (fx: EffectConfig): EffectConfig => ({
+  ...fx,
+  from: withoutFilter(fx.from),
+  steps: fx.steps.map(withoutFilter),
+  exit: withoutFilter(fx.exit)
+});
+
 const buildKeyframes = (from: Snapshot, steps: Snapshot[]): Keyframes => {
   const keys = new Set<string>([...Object.keys(from), ...steps.flatMap(s => Object.keys(s))]);
 
@@ -224,6 +238,41 @@ const buildRanks = (count: number, staggerFrom: BlurTextStaggerFrom, seedText: s
   return ranks;
 };
 
+const TRANSFORM_UNITS: Record<string, string> = {
+  x: 'px',
+  y: 'px',
+  scale: '',
+  rotateX: 'deg',
+  rotateY: 'deg',
+  skewX: 'deg'
+};
+
+const TRANSFORM_FNS: Record<string, string> = {
+  x: 'translateX',
+  y: 'translateY',
+  scale: 'scale',
+  rotateX: 'rotateX',
+  rotateY: 'rotateY',
+  skewX: 'skewX'
+};
+
+/** Static CSS for a snapshot, so idle pieces can render as plain spans. */
+const snapshotStyle = (snapshot: Snapshot): CSSProperties => {
+  const style: Record<string, string | number> = {};
+  const transforms: string[] = [];
+  if (snapshot.transformPerspective) transforms.push(`perspective(${snapshot.transformPerspective}px)`);
+  Object.entries(snapshot).forEach(([key, value]) => {
+    if (key in TRANSFORM_FNS) {
+      const unit = typeof value === 'number' ? TRANSFORM_UNITS[key] : '';
+      transforms.push(`${TRANSFORM_FNS[key]}(${value}${unit})`);
+    } else if (key !== 'transformPerspective' && key !== 'originX' && key !== 'originY') {
+      style[key] = value;
+    }
+  });
+  if (transforms.length) style.transform = transforms.join(' ');
+  return style as CSSProperties;
+};
+
 const startPhase = (trigger: BlurTextTrigger): Phase =>
   trigger === 'load' ? 'in' : trigger === 'hover' || trigger === 'click' ? 'rest' : 'from';
 
@@ -259,7 +308,10 @@ const BlurText = ({
   const completeRef = useRef(onAnimationComplete);
   completeRef.current = onAnimationComplete;
 
-  const fx = useMemo(() => buildEffect(effect, direction, blur, distance), [effect, direction, blur, distance]);
+  const fx = useMemo(
+    () => lightEffect(buildEffect(effect, direction, blur, distance)),
+    [effect, direction, blur, distance]
+  );
 
   const custom = Boolean(animationFrom || animationTo || easing);
   const fromSnapshot = animationFrom ?? fx.from;
@@ -399,6 +451,16 @@ const BlurText = ({
                 : 'none'
         }
       : pieceStyle;
+
+    // Before the reveal starts there is nothing to animate: a plain span in the
+    // start pose avoids mounting (and measuring) a motion node per word.
+    if (phase === 'from') {
+      return (
+        <span aria-hidden="true" key={piece.key} style={{ ...(style as CSSProperties), ...snapshotStyle(fromSnapshot) }}>
+          {piece.content}
+        </span>
+      );
+    }
 
     return (
       <motion.span

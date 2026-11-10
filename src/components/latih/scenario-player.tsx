@@ -238,7 +238,7 @@ function Game({ scenario, signedIn, onRetry }: Props & { onRetry: () => void }) 
         {stars >= 2 ? <Confetti /> : null}
         <AnimatedContent distance={28} duration={0.7}>
           <div className="flex flex-col items-center gap-6 overflow-hidden rounded-[2rem] border border-border bg-card p-8 text-center shadow-sm">
-            <Image src="/animated_maskot.gif" alt="" width={96} height={96} unoptimized className="size-24 object-contain" />
+            <Image src="/mascot/dity-small.webp" alt="" width={96} height={96} unoptimized className="size-24 object-contain" />
             {gameOver ? (
               <span className="flex size-14 items-center justify-center rounded-full bg-rose-500/10 text-rose-500">
                 <HeartIcon className="size-7" />
@@ -453,7 +453,7 @@ function Game({ scenario, signedIn, onRetry }: Props & { onRetry: () => void }) 
                     item.outcome.isSafe ? "border-primary/40 bg-primary/5" : "border-destructive/40 bg-destructive/5",
                   )}
                 >
-                  <Image src="/animated_maskot.gif" alt="" width={32} height={32} unoptimized className="size-8 shrink-0 object-contain" />
+                  <Image src="/mascot/dity-small.webp" alt="" width={32} height={32} unoptimized className="size-8 shrink-0 object-contain" />
                   <div className="flex flex-col gap-1">
                     <span className={cn("flex items-center gap-1.5 font-normal", item.outcome.isSafe ? "text-primary" : "text-destructive")}>
                       {item.outcome.isSafe ? <CircleCheckIcon className="size-4" /> : <TriangleAlertIcon className="size-4" />}

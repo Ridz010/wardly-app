@@ -142,7 +142,7 @@ export function LoginForm({
             <div className="pointer-events-none absolute inset-0 -z-10 flex items-end justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/animated_maskot.gif"
+                src="/mascot/dity.webp"
                 alt=""
                 className="h-[80%] w-auto max-w-full translate-y-6 select-none object-contain object-bottom"
                 draggable={false}

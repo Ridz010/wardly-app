@@ -3,6 +3,7 @@ import "server-only";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { askLlm, type LlmVerdict } from "@/lib/llm";
 import { redact } from "@/lib/redact";
+import { normalizeScore, scoreForLevel } from "@/lib/risk";
 import {
     analyzeRules,
     levelFromScore,
@@ -29,6 +30,18 @@ export type AnalysisResult = {
     saved: boolean;
     extracted?: string;
     quota?: QuotaInfo;
+    /** No check could actually run, so the 0 score says nothing about the message. */
+    inconclusive?: boolean;
+};
+
+const INCONCLUSIVE = {
+    summary:
+        "Pemeriksaan otomatis sedang tidak tersedia, jadi pesan ini belum bisa dinilai. Hasil ini bukan berarti pesannya aman.",
+    steps: [
+        "Coba periksa lagi beberapa saat lagi.",
+        "Sementara itu, jangan klik tautan atau kirim data apa pun.",
+        "Verifikasi ke pihak terkait lewat kontak resmi, bukan kontak di pesan.",
+    ],
 };
 
 const FALLBACK: Record<Level, { summary: string; steps: string[] }> = {
@@ -82,20 +95,21 @@ export async function analyzeMessage({
     const urls = analyzeUrls(clean);
 
     const hits = [...rules.hits, ...urls.hits];
-    const score = Math.min(100, rules.score + urls.score);
-    let level = levelFromScore(score);
+    const ruleScore = normalizeScore(rules.score + urls.score);
 
     const verdict: LlmVerdict | null = await askLlm(clean);
-    if (verdict) level = maxLevel(level, verdict.level);
+    const level = maxLevel(levelFromScore(ruleScore), verdict?.level);
+    const score = scoreForLevel(level, ruleScore, verdict?.score);
+    const inconclusive = !rules.available && !verdict && !hits.length;
 
-    const fallback = FALLBACK[level];
+    const fallback = inconclusive ? INCONCLUSIVE : FALLBACK[level];
     const reasons =
         verdict?.reasons.length ? verdict.reasons : hits.map((hit) => hit.explanation);
     const nextSteps = verdict?.next_steps.length ? verdict.next_steps : fallback.steps;
     const summary = verdict?.summary ?? fallback.summary;
 
     let id: string | null = null;
-    if (saveHistory && userId) {
+    if (saveHistory && userId && !inconclusive) {
         const { data } = await createAdminClient()
             .from("analyses")
             .insert({
@@ -126,6 +140,7 @@ export async function analyzeMessage({
         redacted: Object.keys(counts),
         ai: Boolean(verdict),
         saved: Boolean(id),
+        inconclusive,
     };
 }
 
@@ -133,6 +148,7 @@ export type QuickResult = {
     level: Level;
     score: number;
     hits: Pick<Hit, "code" | "label" | "explanation">[];
+    inconclusive: boolean;
 };
 
 export async function quickCheck(text: string, rateKey: string): Promise<QuickResult> {
@@ -141,15 +157,17 @@ export async function quickCheck(text: string, rateKey: string): Promise<QuickRe
     const clean = redact(text).clean;
     const rules = await analyzeRules(clean);
     const urls = analyzeUrls(clean);
-    const score = Math.min(100, rules.score + urls.score);
+    const score = normalizeScore(rules.score + urls.score);
+    const hits = [...rules.hits, ...urls.hits];
 
     return {
         level: levelFromScore(score),
         score,
-        hits: [...rules.hits, ...urls.hits].map(({ code, label, explanation }) => ({
+        hits: hits.map(({ code, label, explanation }) => ({
             code,
             label,
             explanation,
         })),
+        inconclusive: !rules.available && !hits.length,
     };
 }

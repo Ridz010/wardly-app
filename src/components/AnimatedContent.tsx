@@ -1,10 +1,6 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
 
 export type AnimatedContentWipe = 'none' | 'up' | 'down' | 'left' | 'right' | 'center';
 export type AnimatedContentStaggerFrom = 'start' | 'end' | 'center' | 'edges' | 'random';
@@ -16,6 +12,7 @@ export interface AnimatedContentProps extends Omit<HTMLAttributes<HTMLDivElement
   direction?: 'vertical' | 'horizontal';
   reverse?: boolean;
   duration?: number;
+  /** GSAP-style name (`power3.out`) or any CSS easing string. */
   ease?: string;
   initialOpacity?: number;
   animateOpacity?: boolean;
@@ -30,7 +27,6 @@ export interface AnimatedContentProps extends Omit<HTMLAttributes<HTMLDivElement
   staggerFrom?: AnimatedContentStaggerFrom;
   trigger?: 'scroll' | 'mount';
   once?: boolean;
-  scrub?: boolean | number;
   disappearAfter?: number;
   disappearDuration?: number;
   disappearEase?: string;
@@ -52,6 +48,55 @@ const WIPES: Record<string, string> = {
     'radial-gradient(farthest-corner at 50% 50%, #000 calc(var(--ac-wipe) * 140% - 40%), transparent calc(var(--ac-wipe) * 140%))'
 };
 
+// GSAP ease names mapped to CSS cubic-beziers, so existing props keep their feel.
+const EASES: Record<string, string> = {
+  none: 'linear',
+  linear: 'linear',
+  'power1.out': 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+  'power1.in': 'cubic-bezier(0.55, 0.085, 0.68, 0.53)',
+  'power1.inOut': 'cubic-bezier(0.455, 0.03, 0.515, 0.955)',
+  'power2.out': 'cubic-bezier(0.215, 0.61, 0.355, 1)',
+  'power2.in': 'cubic-bezier(0.55, 0.055, 0.675, 0.19)',
+  'power2.inOut': 'cubic-bezier(0.645, 0.045, 0.355, 1)',
+  'power3.out': 'cubic-bezier(0.165, 0.84, 0.44, 1)',
+  'power3.in': 'cubic-bezier(0.895, 0.03, 0.685, 0.22)',
+  'power3.inOut': 'cubic-bezier(0.77, 0, 0.175, 1)',
+  'power4.out': 'cubic-bezier(0.23, 1, 0.32, 1)',
+  'power4.in': 'cubic-bezier(0.755, 0.05, 0.855, 0.06)',
+  'power4.inOut': 'cubic-bezier(0.86, 0, 0.07, 1)',
+  'expo.out': 'cubic-bezier(0.19, 1, 0.22, 1)',
+  'back.out': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  'sine.out': 'cubic-bezier(0.39, 0.575, 0.565, 1)'
+};
+
+const toEasing = (ease: string) =>
+  EASES[ease] ?? (/^(cubic-bezier|linear|ease|steps)/.test(ease) ? ease : EASES['power3.out']);
+
+const staggerIndex = (index: number, count: number, from: AnimatedContentStaggerFrom) => {
+  const mid = (count - 1) / 2;
+  if (from === 'end') return count - 1 - index;
+  if (from === 'center') return Math.abs(index - mid);
+  if (from === 'edges') return mid - Math.abs(index - mid);
+  if (from === 'random') return Math.random() * (count - 1);
+  return index;
+};
+
+let wipeRegistered = false;
+const registerWipe = () => {
+  if (wipeRegistered) return;
+  wipeRegistered = true;
+  try {
+    CSS.registerProperty({ name: '--ac-wipe', syntax: '<number>', inherits: false, initialValue: '1' });
+  } catch {
+    // Already registered, or unsupported: the wipe then simply snaps open.
+  }
+};
+
+/**
+ * Scroll-reveal wrapper. Runs on the Web Animations API, so it never reads
+ * computed styles or layout during hydration (the old GSAP version did, for
+ * every instance on the page).
+ */
 const AnimatedContent = ({
   children,
   container,
@@ -73,7 +118,6 @@ const AnimatedContent = ({
   staggerFrom = 'start',
   trigger = 'scroll',
   once = true,
-  scrub = false,
   disappearAfter = 0,
   disappearDuration = 0.5,
   disappearEase = 'power3.in',
@@ -86,133 +130,175 @@ const AnimatedContent = ({
 }: AnimatedContentProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const callbacksRef = useRef({ onStart, onComplete, onDisappearanceComplete });
-  callbacksRef.current = { onStart, onComplete, onDisappearanceComplete };
+  useIsomorphicLayoutEffect(() => {
+    callbacksRef.current = { onStart, onComplete, onDisappearanceComplete };
+  });
 
   useIsomorphicLayoutEffect(() => {
     const el = ref.current;
     if (!el) return undefined;
 
+    const reveal = () => {
+      el.style.visibility = 'visible';
+    };
+
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    if (reduce || typeof el.animate !== 'function') {
+      reveal();
+      callbacksRef.current.onComplete?.();
+      return undefined;
+    }
+
     let scroller: Element | string | null = container || document.getElementById('snap-main-container') || null;
     if (typeof scroller === 'string') scroller = document.querySelector(scroller);
 
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const targets = (stagger > 0 && el.children.length ? Array.from(el.children) : [el]) as HTMLElement[];
+    const horizontal = direction === 'horizontal';
+    const sign = reverse ? -1 : 1;
+    const mask = WIPES[wipe];
 
-    const ctx = gsap.context(() => {
-      const targets: Element[] = stagger > 0 && el.children.length ? Array.from(el.children) : [el];
-      const horizontal = direction === 'horizontal';
-      const axis = horizontal ? 'x' : 'y';
-      const sign = reverse ? -1 : 1;
-      const mask = WIPES[wipe];
+    // Same transform function list on both ends keeps the interpolation smooth.
+    const transform = (offset: number, scaleTo: number, rotation: number, lean: number) => {
+      const parts = [
+        tilt ? 'perspective(900px)' : '',
+        horizontal ? `translateX(${offset}px)` : `translateY(${offset}px)`,
+        `scale(${scaleTo})`,
+        rotate ? `rotate(${rotation}deg)` : '',
+        tilt ? (horizontal ? `rotateY(${lean}deg)` : `rotateX(${lean}deg)`) : ''
+      ];
+      return parts.filter(Boolean).join(' ');
+    };
 
-      gsap.set(el, { visibility: 'visible' });
-
-      if (reduce) {
-        callbacksRef.current.onComplete?.();
-        return;
-      }
-
-      const from: gsap.TweenVars = {
-        [axis]: distance * sign,
-        scale,
-        opacity: animateOpacity ? initialOpacity : 1
-      };
-      const to: gsap.TweenVars = {
-        [axis]: 0,
-        scale: 1,
-        opacity: 1,
-        duration,
-        ease
-      };
-
-      if (blur > 0) {
-        from.filter = `blur(${blur}px)`;
-        to.filter = 'blur(0px)';
-      }
-      if (rotate) {
-        from.rotation = rotate * sign;
-        to.rotation = 0;
-      }
-      if (tilt) {
-        const tiltAxis = horizontal ? 'rotationY' : 'rotationX';
-        from[tiltAxis] = horizontal ? -tilt * sign : tilt * sign;
-        to[tiltAxis] = 0;
-        from.transformPerspective = 900;
-        to.transformPerspective = 900;
-      }
-      if (mask) {
-        gsap.set(targets, { maskImage: mask, webkitMaskImage: mask });
-        from['--ac-wipe'] = 0;
-        to['--ac-wipe'] = 1;
-      }
-      if (stagger > 0) to.stagger = { each: stagger, from: staggerFrom };
-
-      const settle = () => {
-        if (scrub) return;
-        gsap.set(targets, { clearProps: mask ? 'filter,transform,maskImage,webkitMaskImage' : 'filter,transform' });
-      };
-
-      const disappear = () => {
-        if (disappearAfter <= 0) return;
-        const out: gsap.TweenVars = {
-          [axis]: -distance * sign,
-          scale: 0.8,
-          opacity: animateOpacity ? initialOpacity : 0,
-          delay: disappearAfter,
-          duration: disappearDuration,
-          ease: disappearEase,
-          onComplete: () => callbacksRef.current.onDisappearanceComplete?.()
-        };
-        if (blur > 0) out.filter = `blur(${blur}px)`;
-        if (stagger > 0) out.stagger = { each: stagger, from: staggerFrom };
-        gsap.to(targets, out);
-      };
-
-      const tl = gsap.timeline({
-        paused: true,
-        onStart: () => callbacksRef.current.onStart?.(),
-        onComplete: () => {
-          callbacksRef.current.onComplete?.();
-          settle();
-          if (once && !scrub) disappear();
-        }
+    const lean = horizontal ? -tilt * sign : tilt * sign;
+    const from: Keyframe = {
+      transform: transform(distance * sign, scale, rotate * sign, lean),
+      opacity: animateOpacity ? initialOpacity : 1
+    };
+    const to: Keyframe = { transform: transform(0, 1, 0, 0), opacity: 1 };
+    if (blur > 0) {
+      from.filter = `blur(${blur}px)`;
+      to.filter = 'blur(0px)';
+    }
+    if (mask) {
+      registerWipe();
+      from['--ac-wipe'] = 0;
+      to['--ac-wipe'] = 1;
+      targets.forEach(target => {
+        target.style.maskImage = mask;
+        target.style.setProperty('-webkit-mask-image', mask);
       });
-      tl.fromTo(targets, from, to, scrub ? 0 : Math.max(delay, 0));
+    }
 
-      if (trigger === 'mount') {
-        tl.play();
-        return;
-      }
+    const clearMask = () => {
+      if (!mask) return;
+      targets.forEach(target => {
+        target.style.maskImage = '';
+        target.style.removeProperty('-webkit-mask-image');
+      });
+    };
 
-      const start = `top ${(1 - threshold) * 100}%`;
+    const easing = toEasing(ease);
+    // Created paused with fill "both": targets sit in the start pose until revealed.
+    const animations = targets.map((target, index) => {
+      const offset = stagger > 0 ? staggerIndex(index, targets.length, staggerFrom) * stagger : 0;
+      const animation = target.animate([from, to], {
+        duration: duration * 1000,
+        delay: (Math.max(delay, 0) + offset) * 1000,
+        easing,
+        fill: 'both'
+      });
+      animation.pause();
+      return animation;
+    });
+    reveal();
 
-      if (scrub) {
-        ScrollTrigger.create({
-          trigger: el,
-          scroller,
-          start,
-          end: `top ${Math.max((1 - threshold) * 100 - 45, 5)}%`,
-          scrub: scrub === true ? true : Math.max(Number(scrub) || 0, 0.01),
-          animation: tl
+    let disposed = false;
+    const extras: Animation[] = [];
+
+    const disappear = () => {
+      if (disappearAfter <= 0) return;
+      const out: Keyframe = {
+        transform: transform(-distance * sign, 0.8, 0, 0),
+        opacity: animateOpacity ? initialOpacity : 0
+      };
+      if (blur > 0) out.filter = `blur(${blur}px)`;
+      const fades = targets.map((target, index) => {
+        const offset = stagger > 0 ? staggerIndex(index, targets.length, staggerFrom) * stagger : 0;
+        return target.animate([{ transform: transform(0, 1, 0, 0), opacity: 1 }, out], {
+          duration: disappearDuration * 1000,
+          delay: (disappearAfter + offset) * 1000,
+          easing: toEasing(disappearEase),
+          fill: 'forwards'
         });
-        return;
-      }
-
-      ScrollTrigger.create({
-        trigger: el,
-        scroller,
-        start,
-        once,
-        onEnter: () => tl.play(),
-        onLeaveBack: once
-          ? undefined
-          : () => {
-              if (mask) gsap.set(targets, { maskImage: mask, webkitMaskImage: mask });
-              tl.reverse();
-            }
       });
-    }, el);
+      extras.push(...fades);
+      Promise.all(fades.map(fade => fade.finished))
+        .then(() => {
+          if (!disposed) callbacksRef.current.onDisappearanceComplete?.();
+        })
+        .catch(() => {});
+    };
 
-    return () => ctx.revert();
+    let started = false;
+    const play = () => {
+      if (!started) {
+        started = true;
+        callbacksRef.current.onStart?.();
+        Promise.all(animations.map(animation => animation.finished))
+          .then(() => {
+            if (disposed) return;
+            callbacksRef.current.onComplete?.();
+            if (once) {
+              // The end pose equals the element's own styles, so drop the effects entirely.
+              animations.forEach(animation => animation.cancel());
+              clearMask();
+              disappear();
+            }
+          })
+          .catch(() => {});
+      }
+      animations.forEach(animation => {
+        animation.playbackRate = 1;
+        animation.play();
+      });
+    };
+
+    if (trigger === 'mount') {
+      play();
+      return () => {
+        disposed = true;
+        animations.forEach(animation => animation.cancel());
+        extras.forEach(animation => animation.cancel());
+        clearMask();
+      };
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          play();
+          if (once) observer.disconnect();
+        } else if (!once && started && entry.boundingClientRect.top > 0) {
+          animations.forEach(animation => {
+            animation.playbackRate = -1;
+            animation.play();
+          });
+        }
+      },
+      {
+        root: scroller instanceof Element ? scroller : null,
+        rootMargin: `0px 0px ${-threshold * 100}% 0px`
+      }
+    );
+    observer.observe(el);
+
+    return () => {
+      disposed = true;
+      observer.disconnect();
+      animations.forEach(animation => animation.cancel());
+      extras.forEach(animation => animation.cancel());
+      clearMask();
+    };
   }, [
     container,
     distance,
@@ -233,7 +319,6 @@ const AnimatedContent = ({
     staggerFrom,
     trigger,
     once,
-    scrub,
     disappearAfter,
     disappearDuration,
     disappearEase
