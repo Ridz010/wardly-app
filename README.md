@@ -7,7 +7,7 @@ Dibuat untuk studi kasus **MIT-Week 2026 — Guardians of the Digital Space: Emp
 | | |
 | --- | --- |
 | Live demo | https://wardly-app.vercel.app/ |
-| Video demo | `https://<isi-tautan-video>` |
+| Video demo | https://drive.google.com/file/d/14_3fUp-_Ewp4XSJo-lS0fyySxBGB-3VY/view |
 | Repositori | https://github.com/Ridz010/wardly-app |
 
 > **Untuk juri, alur tercepat (± 2 menit, tanpa akun):** buka `/bedah` → klik salah satu contoh pesan atau tempel pesan fiktif → **Periksa** → baca skor, tanda bahaya, alasan, dan langkah berikutnya. Lanjutkan ke `/latih` untuk mencoba satu skenario, lalu `/lindungi` untuk panduan tindak lanjut.
