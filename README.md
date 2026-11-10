@@ -6,7 +6,7 @@ Dibuat untuk studi kasus **MIT-Week 2026 — Guardians of the Digital Space: Emp
 
 | | |
 | --- | --- |
-| Live demo | `https://<isi-tautan-deployment>` |
+| Live demo | https://wardly-app.vercel.app/ |
 | Video demo | `https://<isi-tautan-video>` |
 | Repositori | https://github.com/Ridz010/wardly-app |
 
